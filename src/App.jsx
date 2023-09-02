@@ -1,32 +1,21 @@
-import { useState } from "react";
+import { useRef } from "react";
 import "./App.css";
-import { createPortal } from "react-dom";
+import { CustomInput } from "./components/CustomInput";
 
 function App() {
-  const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const inputRef = useRef();
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    console.log(inputRef.current.value);
+  }
 
   return (
-    <div onClick={() => console.log("first")}>
-      <button onClick={() => setIsMessageOpen(true)}> show message</button>
-      {isMessageOpen && (
-        <AlertMessage
-          onCloseMessage={() => {
-            setIsMessageOpen(false);
-            console.log("portal");
-          }}
-        >
-          this is message
-        </AlertMessage>
-      )}
-    </div>
+    <form onSubmit={handleSubmit}>
+      <CustomInput ref={inputRef} />
+      <button type="submit">Submit</button>
+    </form>
   );
 }
 
 export default App;
-
-const AlertMessage = ({ onCloseMessage, children }) => {
-  return createPortal(
-    <div onClick={onCloseMessage}>{children}</div>,
-    document.getElementById("portal")
-  );
-};
