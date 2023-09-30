@@ -1,11 +1,14 @@
-import Child from "./components/Child";
+import { useState } from "react";
 
 function App() {
+  const [changeDogs, setChangeDogs] = useState(false);
   return (
-    <>
-      <p>parent</p>
-      <Child />
-    </>
+    <div>
+      {changeDogs ? <span>Dogs</span> : <span>Cats</span>}
+      <br />
+      <input type="text" key={changeDogs ? "dog" : "cat"} />
+      <button onClick={() => setChangeDogs((d) => !d)}>Switch</button>
+    </div>
   );
 }
 
