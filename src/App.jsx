@@ -1,22 +1,75 @@
-import { useCallback } from "react";
-import { useRef } from "react";
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { parseLinkHeader } from "./parseLinkHeader";
+import "./styles.css";
+
+const LIMIT = 50;
 
 function App() {
-  const [showInput, setShowInput] = useState(false);
-  const actualInputRef = useRef();
+  const [photos, setPhotos] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const nextPhotoUrlRef = useRef();
 
-  const inputRef = useCallback((input) => {
-    actualInputRef.current = input;
-    if (input === null) return;
-    input.focus();
+  async function fetchPhotos(url, { overwrite = false } = {}) {
+    setIsLoading(true);
+    try {
+      //make delay
+      await new Promise((res) => setTimeout(res, 2000));
+
+      const res = await fetch(url);
+      nextPhotoUrlRef.current = parseLinkHeader(res.headers.get("Link")).next;
+      const photos = await res.json();
+      if (overwrite) {
+        setPhotos(photos);
+      } else {
+        setPhotos((prevPhotos) => {
+          return [...prevPhotos, ...photos];
+        });
+      }
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const imageRef = useCallback((image) => {
+    if (image == null || nextPhotoUrlRef.current == null) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        fetchPhotos(nextPhotoUrlRef.current);
+        observer.unobserve(image);
+      }
+    });
+
+    observer.observe(image);
+  }, []);
+
+  useEffect(() => {
+    fetchPhotos(
+      `http://localhost:3000/photos-short-list?_page=1&_limit=${LIMIT}`,
+      {
+        overwrite: true,
+      }
+    );
   }, []);
 
   return (
-    <>
-      <button onClick={() => setShowInput(true)}>Toggle</button>
-      {showInput && <input type="text" ref={inputRef} />}
-    </>
+    <div className="grid">
+      {photos.map((photo, index) => (
+        <img
+          src={photo.url}
+          key={photo.id}
+          ref={index === photos.length - 1 ? imageRef : undefined}
+        />
+      ))}
+      {isLoading &&
+        Array.from({ length: LIMIT }, (_, index) => index).map((n) => (
+          <div key={n} className="skeleton">
+            Loading...
+          </div>
+        ))}
+    </div>
   );
 }
 
